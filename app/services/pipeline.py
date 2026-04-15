@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from app.core.config import get_settings
-from app.schemas.response import OCRResponse
+from app.schemas.response import OCRDebugInfo, OCRResponse
 from app.services.confidence import ConfidenceScorer
 from app.services.image_preprocess import ImagePreprocessor
 from app.services.ocr_engine import OCREngine
@@ -16,7 +16,13 @@ class OCRPipeline:
         self.template_parser = TemplateParser()
         self.confidence_scorer = ConfidenceScorer()
 
-    def process(self, image_bytes: bytes, filename: str, content_type: str) -> OCRResponse:
+    def process(
+        self,
+        image_bytes: bytes,
+        filename: str,
+        content_type: str,
+        debug: bool = False,
+    ) -> OCRResponse:
         max_bytes = self.settings.max_upload_size_mb * 1024 * 1024
         if len(image_bytes) > max_bytes:
             raise ValueError(
@@ -24,7 +30,7 @@ class OCRPipeline:
             )
 
         preprocess_result = self.preprocessor.run(image_bytes)
-        text, ocr_warnings = self.ocr_engine.extract_text(preprocess_result.image)
+        text, ocr_warnings, ocr_passes = self.ocr_engine.extract_text(preprocess_result.ocr_images)
         fields, items, parse_warnings = self.template_parser.parse(text)
         fields, items, final_warnings = self.confidence_scorer.normalize(
             fields,
@@ -32,7 +38,8 @@ class OCRPipeline:
             preprocess_result.warnings + ocr_warnings + parse_warnings,
         )
 
-        raw_text = text if self.settings.debug_ocr_text else None
+        emit_debug = debug or self.settings.debug_ocr_text
+        raw_text = text if emit_debug else None
         success = any(field.value is not None for field in fields.values()) or bool(items)
 
         if not success and not final_warnings:
@@ -45,5 +52,10 @@ class OCRPipeline:
             items=items,
             warnings=final_warnings,
             raw_text=raw_text,
+            debug=OCRDebugInfo(
+                preprocess_notes=preprocess_result.notes,
+                ocr_passes=ocr_passes,
+            )
+            if emit_debug
+            else None,
         )
-

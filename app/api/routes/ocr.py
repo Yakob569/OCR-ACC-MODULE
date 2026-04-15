@@ -1,4 +1,4 @@
-from fastapi import APIRouter, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
 
 from app.schemas.response import OCRResponse
 from app.services.pipeline import OCRPipeline
@@ -9,7 +9,10 @@ pipeline = OCRPipeline()
 
 
 @router.post("/extract", response_model=OCRResponse)
-async def extract_receipt(file: UploadFile = File(...)) -> OCRResponse:
+async def extract_receipt(
+    file: UploadFile = File(...),
+    debug: bool = Query(default=False),
+) -> OCRResponse:
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -28,10 +31,10 @@ async def extract_receipt(file: UploadFile = File(...)) -> OCRResponse:
             image_bytes=image_bytes,
             filename=file.filename or "upload",
             content_type=file.content_type,
+            debug=debug,
         )
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(exc),
         ) from exc
-
