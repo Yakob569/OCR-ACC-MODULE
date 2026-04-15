@@ -1,0 +1,24 @@
+from pydantic import BaseModel, Field
+
+
+class FieldValue(BaseModel):
+    value: str | float | int | None
+    confidence: float = Field(ge=0.0, le=1.0)
+
+
+class Item(BaseModel):
+    description: str
+    quantity: float | None = None
+    unit_price: float | None = None
+    line_total: float | None = None
+    confidence: float = Field(ge=0.0, le=1.0)
+
+
+class OCRResponse(BaseModel):
+    success: bool
+    receipt_type: str
+    fields: dict[str, FieldValue]
+    items: list[Item]
+    warnings: list[str]
+    raw_text: str | None = None
+
