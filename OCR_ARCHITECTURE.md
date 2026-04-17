@@ -20,7 +20,7 @@ We are **not** starting with true AI deblurring. For blurred or weak images, the
 - API framework: FastAPI
 - OCR/image processing:
   - OpenCV for preprocessing
-  - PaddleOCR or Tesseract for OCR
+  - **PaddleOCR** for the core OCR engine (significantly more robust than Tesseract for receipts)
 - Data validation: Pydantic
 - Background jobs: optional later with Celery/RQ if throughput grows
 - Storage:

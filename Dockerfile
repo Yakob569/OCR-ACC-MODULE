@@ -5,13 +5,16 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# Install system dependencies for OpenCV and PaddleOCR
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends tesseract-ocr \
+    && apt-get install -y --no-install-recommends \
+       libgl1-mesa-glx \
+       libglib2.0-0 \
+       libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt \
-    && pip install --no-cache-dir pytesseract==0.3.13
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
 COPY tests ./tests

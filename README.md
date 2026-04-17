@@ -59,15 +59,13 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-For local OCR text extraction, `tesseract` must also be installed on the host machine.
-
 ## OCR Runtime Note
 
 The repo currently uses:
 
-- `opencv-python-headless` for preprocessing
-- `pytesseract` for OCR
-- `tesseract-ocr` in Docker for the OCR binary
+- `opencv-python` for preprocessing
+- `paddleocr` for OCR engine
+- `paddlepaddle` (CPU version) for inference
 
 ## API
 
@@ -77,7 +75,7 @@ The repo currently uses:
 ## Notes
 
 - The first version is scaffolded for one known receipt template.
-- OCR extraction currently uses a local pipeline with graceful fallback when the OCR engine is unavailable.
+- OCR extraction now uses **PaddleOCR** for improved robustness on rotated or low-quality receipt images.
 - Sample receipt images currently live in the repo root and can be used for manual testing.
 
 ## Environment
@@ -89,7 +87,7 @@ Copy `.env.example` to `.env` if you want to override defaults.
 The repo includes a `Dockerfile` that installs:
 
 - Python dependencies
-- `tesseract-ocr`
+- System libraries for OpenCV and Paddle (libgl1, libglib2.0, libssl)
 
 Example build and run:
 
