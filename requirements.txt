@@ -84,3 +84,8 @@ typing_extensions==4.15.0
 ujson==5.12.0
 urllib3==2.6.3
 wcwidth==0.6.0
+
+# API server (required in Docker/Render runtime)
+fastapi
+uvicorn[standard]
+python-multipart
