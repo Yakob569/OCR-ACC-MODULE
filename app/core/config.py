@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
     max_upload_size_mb: int = 10
     debug_ocr_text: bool = False
+    log_level: str = "INFO"
 
     model_config = SettingsConfigDict(env_prefix="OCR_", case_sensitive=False)
 
@@ -16,4 +17,3 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-
