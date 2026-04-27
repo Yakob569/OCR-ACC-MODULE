@@ -10,8 +10,15 @@ class Settings(BaseSettings):
     max_upload_size_mb: int = 10
     debug_ocr_text: bool = False
     log_level: str = "INFO"
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.0-flash"
 
-    model_config = SettingsConfigDict(env_prefix="OCR_", case_sensitive=False)
+    model_config = SettingsConfigDict(
+        env_prefix="OCR_", 
+        case_sensitive=False,
+        env_file=".env",
+        extra="ignore"
+    )
 
 
 @lru_cache

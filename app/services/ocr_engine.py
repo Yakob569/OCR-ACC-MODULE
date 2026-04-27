@@ -13,8 +13,18 @@ logging.getLogger("ppocr").setLevel(logging.ERROR)
 
 class OCREngine:
     def __init__(self) -> None:
-        # Initialize PaddleOCR once
-        self.ocr = PaddleOCR(use_angle_cls=True, lang="en", show_log=False)
+        # Use lite configuration to fit within the 512MB Render limit
+        # 'mobile' models are much lighter.
+        self.ocr = PaddleOCR(
+            use_angle_cls=False,     # Disable angle classification to save RAM
+            lang="en",
+            show_log=False,
+            use_gpu=False,
+            # Enable lightweight models
+            det_model_dir=None,
+            rec_model_dir=None,
+            cls_model_dir=None,
+        )
 
     def extract_text(self, images: dict[str, cv2.typing.MatLike]) -> tuple[str, list[str], list[OCRPassDebug]]:
         warnings: list[str] = []

@@ -1,0 +1,77 @@
+{
+	"info": {
+		"_postman_id": "8a32a611-37f9-4b6c-8515-373a69772023",
+		"name": "OCR-ACC-MODULE API",
+		"description": "Collection for the receipt OCR service, including batch processing capabilities.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/health",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8000",
+					"path": ["health"]
+				}
+			}
+		},
+		{
+			"name": "Single Image Extraction",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/path/to/your/receipt.jpg"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:8000/api/v1/extract",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8000",
+					"path": ["api", "v1", "extract"]
+				}
+			}
+		},
+		{
+			"name": "Batch Image Extraction",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "files",
+							"type": "file",
+							"src": "/path/to/receipt1.jpg"
+						},
+						{
+							"key": "files",
+							"type": "file",
+							"src": "/path/to/receipt2.jpg"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:8000/api/v1/extract-batch",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8000",
+					"path": ["api", "v1", "extract-batch"]
+				}
+			}
+		}
+	]
+}

@@ -1,36 +1,49 @@
 from pydantic import BaseModel, Field
+from typing import Optional, Dict, Any, List
 
 
 class FieldValue(BaseModel):
-    value: str | float | int | None
+    value: Any
     confidence: float = Field(ge=0.0, le=1.0)
+
+
+class MerchantDetails(BaseModel):
+    name: FieldValue
+    tin: Optional[FieldValue] = None
+    address: Optional[FieldValue] = None
+    phone: Optional[FieldValue] = None
+
+
+class TransactionDetails(BaseModel):
+    date: FieldValue
+    invoice_number: Optional[FieldValue] = None
+    customer_name: Optional[FieldValue] = None
+    cashier_name: Optional[FieldValue] = None
 
 
 class Item(BaseModel):
     description: str
-    quantity: float | None = None
-    unit_price: float | None = None
-    line_total: float | None = None
+    quantity: Optional[float] = None
+    unit_price: Optional[float] = None
+    line_total: Optional[float] = None
+    tax_amount: Optional[float] = None
     confidence: float = Field(ge=0.0, le=1.0)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
-class OCRPassDebug(BaseModel):
-    variant: str
-    config: str
-    score: int
-    preview: str
-
-
-class OCRDebugInfo(BaseModel):
-    preprocess_notes: list[str]
-    ocr_passes: list[OCRPassDebug]
+class Totals(BaseModel):
+    subtotal: Optional[FieldValue] = None
+    tax_total: Optional[FieldValue] = None
+    grand_total: FieldValue
 
 
 class OCRResponse(BaseModel):
     success: bool
+    filename: str
     receipt_type: str
-    fields: dict[str, FieldValue]
-    items: list[Item]
-    warnings: list[str]
-    raw_text: str | None = None
-    debug: OCRDebugInfo | None = None
+    merchant: MerchantDetails
+    transaction: TransactionDetails
+    items: List[Item]
+    totals: Totals
+    warnings: List[str]
+    raw_text: Optional[str] = None
