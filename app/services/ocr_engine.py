@@ -59,6 +59,10 @@ class OCREngine:
 
         if not best_text.strip():
             warnings.append("OCR returned no readable text.")
+        else:
+            logger = logging.getLogger("ocr.engine")
+            best_variant = next((p.variant for p in debug_passes if p.score == best_score), "unknown")
+            logger.info("best_ocr_match variant=%s score=%d", best_variant, best_score)
             
         return best_text, warnings, sorted(debug_passes, key=lambda item: item.score, reverse=True)
 

@@ -6,5 +6,8 @@ services:
     image: receipt-ocr-backend:latest
     ports:
       - "8000:8000"
+    volumes:
+      - ./app:/app/app
+      - ./tests:/app/tests
     env_file:
       - .env.example

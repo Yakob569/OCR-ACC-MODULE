@@ -61,20 +61,17 @@ async def extract_receipt(
             request_id=request_id,
         )
         elapsed_ms = int((time.perf_counter() - start) * 1000)
-        logger.info(
-            "done request_id=%s success=%s receipt_type=%s warnings=%d bytes=%d elapsed_ms=%d",
-            request_id,
-            result.success,
-            result.receipt_type,
-            len(result.warnings),
-            len(image_bytes),
-            elapsed_ms,
-        )
+        
+        if result.success:
+            print(f"SUCCESS request_id={request_id} receipt_type={result.receipt_type} elapsed_ms={elapsed_ms} fields_found={len([f for f in result.fields.values() if f.value is not None])}", flush=True)
+        else:
+            print(f"EXTRACTION_FAILED request_id={request_id} receipt_type={result.receipt_type} elapsed_ms={elapsed_ms} warnings={', '.join(result.warnings)}", flush=True)
+            
         return result
     except ValueError as exc:
         elapsed_ms = int((time.perf_counter() - start) * 1000)
         logger.warning(
-            "error request_id=%s kind=value_error bytes=%d elapsed_ms=%d detail=%s",
+            "CLIENT_ERROR request_id=%s kind=value_error bytes=%d elapsed_ms=%d detail=%s",
             request_id,
             len(image_bytes),
             elapsed_ms,
@@ -84,12 +81,13 @@ async def extract_receipt(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(exc),
         ) from exc
-    except Exception:
+    except Exception as exc:
         elapsed_ms = int((time.perf_counter() - start) * 1000)
         logger.exception(
-            "error request_id=%s kind=unhandled bytes=%d elapsed_ms=%d",
+            "SERVER_ERROR request_id=%s kind=unhandled bytes=%d elapsed_ms=%d error=%s",
             request_id,
             len(image_bytes),
             elapsed_ms,
+            str(exc)
         )
         raise

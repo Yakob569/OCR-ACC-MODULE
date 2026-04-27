@@ -57,6 +57,10 @@ class OCRPipeline:
         normalize_ms = int((time.perf_counter() - normalize_start) * 1000)
 
         total_ms = int((time.perf_counter() - total_start) * 1000)
+        
+        extracted_summary = ", ".join([f"{k}={v.value}" for k, v in fields.items() if v.value is not None])
+        print(f"PIPELINE_DONE request_id={request_id} total_ms={total_ms} type={self.template_parser.receipt_type} extracted=[{extracted_summary}]", flush=True)
+
         logger.info(
             "timings request_id=%s filename=%s content_type=%s bytes=%d preprocess_ms=%d ocr_ms=%d parse_ms=%d normalize_ms=%d total_ms=%d warnings=%d",
             request_id,

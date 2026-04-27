@@ -6,7 +6,7 @@ from app.schemas.response import FieldValue, Item
 
 
 class TemplateParser:
-    receipt_type = "medical_services_receipt"
+    receipt_type = "retail_receipt"
 
     def parse(self, text: str) -> tuple[dict[str, FieldValue], list[Item], list[str]]:
         raw_lines = [line.strip() for line in text.splitlines() if line.strip()]
@@ -16,8 +16,8 @@ class TemplateParser:
 
         fields: dict[str, FieldValue] = {
             "merchant_name": FieldValue(
-                value=self._first_matching_line(upper_lines, ("MEDICAL SERVICES", "PLC")),
-                confidence=0.55 if text.strip() else 0.0,
+                value=self._extract_merchant_name(upper_lines),
+                confidence=0.70 if text.strip() else 0.0,
             ),
             "receipt_number": FieldValue(
                 value=self._extract_receipt_number(raw_lines),
@@ -41,7 +41,7 @@ class TemplateParser:
             ),
             "total_amount": FieldValue(
                 value=self._extract_amount_near_total(raw_lines),
-                confidence=0.80 if any("TOTAL" in line for line in upper_lines) else 0.0,
+                confidence=0.85 if any("TOTAL" in line for line in upper_lines) else 0.0,
             ),
         }
 
@@ -50,10 +50,26 @@ class TemplateParser:
 
         return fields, self._extract_items(raw_lines), warnings
 
-    def _first_matching_line(self, lines: list[str], required_tokens: tuple[str, ...]) -> str | None:
-        for line in lines:
-            if all(token in line for token in required_tokens):
-                return line
+    def _extract_merchant_name(self, lines: list[str]) -> str | None:
+        # Skip lines that look like TIN, address, or metadata
+        skip_patterns = [
+            r"TIN[:\-\s]*\d+",
+            r"FS\s*NO",
+            r"TEL[:\-\s]*\d+",
+            r"ADDIS",
+            r"MALL",
+            r"STREET",
+            r"CASH\s*INVOICE",
+            r"===",
+            r"\d{2}/\d{2}/\d{4}",
+        ]
+        
+        for line in lines[:5]:  # Look at the first 5 lines
+            if any(re.search(p, line, re.IGNORECASE) for p in skip_patterns):
+                continue
+            if len(line) > 3:
+                # Clean up name if it has extra symbols
+                return line.strip(" =-").strip()
         return lines[0] if lines else None
 
     def _extract_group(self, text: str, pattern: str) -> str | None:
@@ -67,48 +83,55 @@ class TemplateParser:
         for index, line in enumerate(upper_lines):
             if "TOTAL" not in line:
                 continue
-            candidate_block = " ".join(lines[index : index + 8])
-            amounts = re.findall(r"([0-9][0-9,\.]*[0-9])", candidate_block.replace("*", ""))
-            for raw_amount in reversed(amounts):
-                parsed = self._parse_amount(raw_amount)
-                if parsed is not None:
-                    return parsed
+            
+            # 1. Try to find amount on the same line
+            line_cleaned = line.replace("*", "").replace("TOTAL", "").strip()
+            # Match decimal numbers like 2,056.02
+            amounts = re.findall(r"(\d[0-9,\.]*\.\d{2})\b", line_cleaned)
+            if amounts:
+                return self._parse_amount(amounts[-1])
+
+            # 2. Look at subsequent lines
+            for offset in range(1, 4):
+                if index + offset >= len(lines):
+                    break
+                next_line = lines[index + offset].replace("*", "").strip()
+                match = re.search(r"(\d[0-9,\.]*\.\d{2})\b", next_line)
+                if match:
+                    val = self._parse_amount(match.group(1))
+                    if val and val < 1000000:
+                        return val
         return None
 
     def _extract_items(self, lines: list[str]) -> list[Item]:
         items: list[Item] = []
-        item_pattern = re.compile(
-            r"(?P<qty>\d[\d,\.]*)\s*x\s*(?P<unit>\d[\d,\.]*)",
-            re.IGNORECASE,
+        
+        # Pattern for: qty unit_price *total (e.g. 2 807.830 *1615.66)
+        retail_pattern = re.compile(
+            r"(?P<qty>\d+)\s+(?P<unit>\d[\d,\.]*)\s+\*(?P<total>\d[\d,\.]*)",
+            re.MULTILINE
         )
 
-        for line in lines:
-            match = item_pattern.search(line)
-            if not match:
-                continue
-
-            qty = self._parse_number(match.group("qty"))
-            unit_price = self._parse_amount(match.group("unit"))
-            if qty is None or unit_price is None:
-                continue
-
-            description = line[match.end() :].strip(" =-") or "Unknown item"
-            trailing_amounts = re.findall(r"([0-9][0-9,\.]*[0-9])", line[match.end() :])
-            line_total = None
-            if trailing_amounts:
-                line_total = self._parse_amount(trailing_amounts[-1])
-            if line_total is None:
-                line_total = qty * unit_price
-            items.append(
-                Item(
+        for i, line in enumerate(lines):
+            match = retail_pattern.search(line)
+            if match:
+                qty = self._parse_number(match.group("qty"))
+                unit_price = self._parse_amount(match.group("unit"))
+                line_total = self._parse_amount(match.group("total"))
+                
+                # Description is usually on the line ABOVE
+                description = "Unknown item"
+                if i > 0:
+                    description = lines[i-1].strip(" =-")
+                
+                items.append(Item(
                     description=description,
-                    quantity=qty,
-                    unit_price=unit_price,
-                    line_total=line_total,
-                    confidence=0.55,
-                )
-            )
-
+                    quantity=qty or 1.0,
+                    unit_price=unit_price or 0.0,
+                    line_total=line_total or 0.0,
+                    confidence=0.75
+                ))
+        
         return items
 
     def _parse_number(self, value: str) -> float | None:
@@ -134,14 +157,13 @@ class TemplateParser:
         integer_part = re.sub(r"[^0-9]", "", cleaned[:decimal_index]) or "0"
         fractional_part = re.sub(r"[^0-9]", "", cleaned[decimal_index + 1 :])
 
-        if len(fractional_part) == 0:
-            normalized = integer_part
-        elif len(fractional_part) == 2:
+        if len(fractional_part) == 2:
             normalized = f"{integer_part}.{fractional_part}"
         elif len(fractional_part) == 3 and len(integer_part) >= 1:
-            normalized = f"{integer_part}{fractional_part}"
-        else:
+            # Likely 807.830 -> 807.83
             normalized = f"{integer_part}.{fractional_part[:2]}"
+        else:
+            normalized = f"{integer_part}.{fractional_part[:2]}" if fractional_part else integer_part
 
         try:
             return float(normalized)
