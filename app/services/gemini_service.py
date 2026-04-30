@@ -19,7 +19,7 @@ async def extract_receipt(image_bytes: bytes, filename: str) -> OCRResponse:
     
     Structure your extraction as follows:
     1. Merchant: Look for TIN (Tax Identification Number) first. Then Company Name, Address, and Phone.
-    2. Transaction: Extract Date (DD/MM/YYYY), Invoice/Receipt Number, Customer Name, and Cashier Name.
+    2. Transaction: Extract Date (DD/MM/YYYY), Invoice/Receipt Number, Customer Name, Cashier Name, and Machine ID (look for labels like 'Machine ID', 'Terminal ID', or unique codes near 'ET' at the bottom).
     3. Items: Extract a list of products/services bought. For each, get Description, Quantity, Unit Price, Line Total, and any Tax per item.
     4. Totals: Extract Subtotal, Total Tax, and Grand Total.
 
@@ -36,7 +36,8 @@ async def extract_receipt(image_bytes: bytes, filename: str) -> OCRResponse:
         "date": {"value": "string", "confidence": float},
         "invoice_number": {"value": "string", "confidence": float},
         "customer_name": {"value": "string", "confidence": float},
-        "cashier_name": {"value": "string", "confidence": float}
+        "cashier_name": {"value": "string", "confidence": float},
+        "machine_id": {"value": "string", "confidence": float}
       },
       "items": [
         {
@@ -94,7 +95,8 @@ async def extract_receipt(image_bytes: bytes, filename: str) -> OCRResponse:
             date=to_field(data.get("transaction", {}).get("date")),
             invoice_number=to_field(data.get("transaction", {}).get("invoice_number")),
             customer_name=to_field(data.get("transaction", {}).get("customer_name")),
-            cashier_name=to_field(data.get("transaction", {}).get("cashier_name"))
+            cashier_name=to_field(data.get("transaction", {}).get("cashier_name")),
+            machine_id=to_field(data.get("transaction", {}).get("machine_id"))
         ),
         items=[
             Item(

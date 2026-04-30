@@ -19,6 +19,7 @@ class TransactionDetails(BaseModel):
     invoice_number: Optional[FieldValue] = None
     customer_name: Optional[FieldValue] = None
     cashier_name: Optional[FieldValue] = None
+    machine_id: Optional[FieldValue] = None
 
 
 class Item(BaseModel):
