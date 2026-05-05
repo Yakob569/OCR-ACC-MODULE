@@ -15,7 +15,8 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Adding httpx and croniter for health check
+RUN pip install --no-cache-dir -r requirements.txt httpx croniter
 
 COPY app ./app
 COPY tests ./tests
@@ -27,4 +28,4 @@ COPY .env.example .
 EXPOSE 8000
 
 # Render sets $PORT; fall back to 8000 for local runs.
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "python3 app/health_checker.py & uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
