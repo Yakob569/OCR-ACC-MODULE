@@ -17,6 +17,7 @@ class MerchantDetails(BaseModel):
 class TransactionDetails(BaseModel):
     date: FieldValue
     invoice_number: Optional[FieldValue] = None
+    fs_number: Optional[FieldValue] = None
     customer_name: Optional[FieldValue] = None
     cashier_name: Optional[FieldValue] = None
     machine_id: Optional[FieldValue] = None
@@ -42,9 +43,9 @@ class OCRResponse(BaseModel):
     success: bool
     filename: str
     receipt_type: str
-    merchant: MerchantDetails
-    transaction: TransactionDetails
-    items: List[Item]
-    totals: Totals
-    warnings: List[str]
+    merchant: Optional[MerchantDetails] = None
+    transaction: Optional[TransactionDetails] = None
+    items: List[Item] = Field(default_factory=list)
+    totals: Optional[Totals] = None
+    warnings: List[str] = Field(default_factory=list)
     raw_text: Optional[str] = None
