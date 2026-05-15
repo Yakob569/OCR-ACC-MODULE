@@ -24,7 +24,7 @@ async def extract_receipt(image_bytes: bytes, filename: str) -> OCRResponse:
     1. Merchant: Look for TIN (Tax Identification Number) first. Then Company Name, Address, and Phone.
     2. Transaction: Extract Date (DD/MM/YYYY), Invoice/Receipt Number, FS Number (look for 'FS NO' label), Customer Name, Cashier Name, and Machine ID (look for labels like 'Machine ID', 'Terminal ID', or unique codes near 'ET' at the bottom).
     3. Items: Extract a list of products/services bought. For each, get Description, Quantity, Unit Price, Line Total, and any Tax per item.
-    4. Totals: Extract Subtotal, Total Tax, and Grand Total.
+    3. Items: Extract a list of products/services bought. For each, get Description, Quantity, Unit Price, Line Total, Tax per item, and Category ('Good' or 'Service').
 
     Return ONLY a valid JSON object with this exact structure:
     {
@@ -50,6 +50,7 @@ async def extract_receipt(image_bytes: bytes, filename: str) -> OCRResponse:
           "unit_price": float,
           "line_total": float,
           "tax_amount": float,
+          "category": "string",
           "confidence": float,
           "metadata": {}
         }
@@ -65,6 +66,7 @@ async def extract_receipt(image_bytes: bytes, filename: str) -> OCRResponse:
     Rules:
     - Numerical values must be floats or null.
     - Confidence scores between 0.0 and 1.0.
+    - 'category' must be either 'Good' or 'Service'.
     - If a field is not found, use null for the value.
     - If the item table has extra columns, put them in 'metadata'.
     """
@@ -118,6 +120,7 @@ async def extract_receipt(image_bytes: bytes, filename: str) -> OCRResponse:
                     unit_price=it.get("unit_price"),
                     line_total=it.get("line_total"),
                     tax_amount=it.get("tax_amount"),
+                    category=it.get("category"),
                     confidence=it.get("confidence", 0.0),
                     metadata=it.get("metadata", {})
                 ) for it in data.get("items", [])

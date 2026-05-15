@@ -66,10 +66,27 @@ The repo currently uses:
 - `paddleocr` for OCR engine
 - `paddlepaddle` (CPU version) for inference
 
-## API
+## API Changes
 
-- `GET /health`
-- `POST /api/v1/ocr/extract`
+### v1.1.0 - Item Categorization
+The OCR extraction now includes a `category` field for each item in the `items` array. The model automatically classifies items as either **"Good"** or **"Service"**.
+
+Example item structure in response:
+```json
+{
+  "description": "Consulting Fee",
+  "quantity": 1.0,
+  "unit_price": 500.0,
+  "line_total": 500.0,
+  "tax_amount": 75.0,
+  "category": "Service",
+  "confidence": 0.98,
+  "metadata": {}
+}
+```
+
+## API
+...
 
 ## Notes
 

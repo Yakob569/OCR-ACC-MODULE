@@ -29,6 +29,7 @@ class Item(BaseModel):
     unit_price: Optional[float] = None
     line_total: Optional[float] = None
     tax_amount: Optional[float] = None
+    category: Optional[str] = None  # "Good" or "Service"
     confidence: float = Field(ge=0.0, le=1.0)
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
